@@ -22,6 +22,8 @@ stages:
   dependsOn: Checks
   jobs:
     - template: ./download-source.yml
+      parameters:
+        flags: --use-conda
     - template: ./download-conda.yml
 
 - stage: Build
