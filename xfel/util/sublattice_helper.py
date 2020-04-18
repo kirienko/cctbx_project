@@ -10,13 +10,19 @@ from dials.algorithms.indexing.stills_indexer import calc_2D_rmsd_and_displaceme
 
 SL = sublattice_change_of_basis(max_modulus=2)
 SLT = list(SL.yield_transformations_ascending_modulus())
+# reorder ersatz yield from the toolbox to conform with organized published list
+# Set up the phil file so common sense lookup gives the desired transformation
+SLT = [SLT[3], SLT[1], SLT[0], SLT[5], SLT[4], SLT[2], SLT[6]]
+assert SLT[0].matS().elems == (2,0,0,0,1,0,0,0,1) # Double the a-axis
+assert SLT[1].matS().elems == (1,0,0,0,2,0,0,0,1) # Double the b-axis
+assert SLT[2].matS().elems == (1,0,0,0,1,0,0,0,2) # Double the c-axis
+assert SLT[3].matS().elems == (2,1,0,0,1,0,0,0,1) # C-face centering
+assert SLT[4].matS().elems == (2,0,1,0,1,0,0,0,1) # B-face centering
+assert SLT[5].matS().elems == (1,0,0,0,2,1,0,0,1) # A-face centering
+assert SLT[6].matS().elems == (2,1,1,0,1,0,0,0,1) # Body centering
 
 def integrate_coset(self, experiments, indexed):
         TRANS = self.params.integration.coset.transformation
-        #explicitly test this is the body-centered case, otherwise cannot guarantee list order
-        # XXX Fixme, set up the phil file so common sense lookup gives the desired transformation
-        if TRANS == 6:
-          assert SLT[TRANS].matS().elems == (2,1,1,0,1,0,0,0,1)
 
         # here get a deepcopy that we are not afraid to modify:
         experiments_local = copy.deepcopy(experiments)
@@ -101,7 +107,6 @@ def integrate_coset(self, experiments, indexed):
                     self.params.output.coset_experiments_filename is not None
                     and self.params.output.coset_filename is not None
                 )
-                assert 0 # XXX Fixme
                 n = len(self.all_coset_experiments)
                 self.all_coset_experiments.extend(experiments_local)
                 for i, experiment in enumerate(experiments_local):
@@ -115,7 +120,7 @@ def integrate_coset(self, experiments, indexed):
             # Dump experiments to disk
             if self.params.output.coset_experiments_filename:
 
-                experiments.as_json(self.params.output.coset_experiments_filename)
+                experiments_local.as_json(self.params.output.coset_experiments_filename)
 
             if self.params.output.coset_filename:
                 # Save the reflections
@@ -143,7 +148,7 @@ def integrate_coset(self, experiments, indexed):
                 % (i, len(bright_integrated), rmsd_integrated)
             )
 
-        for crystal_model in experiments.crystals():
+        for crystal_model in experiments_local.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
                 log_str += (
                     ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"
